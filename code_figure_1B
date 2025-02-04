@@ -1,0 +1,144 @@
+%% plot learning curves
+
+close all,clear all, clc
+cd /Users/marcopaoli/Dropbox/2024_Claire_MD/analysis
+load('database.mat')
+
+%% read database
+db = struc.db;
+readme = struc.readme;
+learning_curves = struc.learning_curves;
+cs_plus_scores = learning_curves.learning_curve_plus;
+cs_min_scores = learning_curves.learning_cuver_minus;
+n_folders = length(db);
+
+%% plot learning curves (merged odor sets)
+fig_sets = figure('color','white','position',[100 100 800 800]);
+
+cs_plus = []; cs_min = [];
+for nf = 1:n_folders
+    cs_plus = [cs_plus,cs_plus_scores{nf}];
+    cs_min = [cs_min,cs_min_scores{nf}];
+end
+% plot
+cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
+cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
+% calculate 95% confidence interval
+p_plus = cs_plus_sum/100;  %for cs+ curve
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+p_min = cs_min_sum/100; %foc cs- curve
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+
+%plot learning curve merged datasets 1 and 2
+figure(fig_sets);
+subplot(3,3,7)
+plot(cs_plus_sum,'k')
+hold on
+errorbar(1:6,cs_plus_sum,ci_plus,'k')
+scatter(1:6,cs_plus_sum,70,'k','filled')
+plot(cs_min_sum,'k')
+errorbar(1:6,cs_min_sum,ci_min,'k')
+s = scatter(1:6,cs_min_sum,70,'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[1 1 1]);
+xlim([0.5 6.5])
+ylim([0 100])
+xticks([1:6]); xticklabels({'T1','T2','T3','T4','T5','T6'})
+yticks([0:20:100]);
+set(gca,'Fontsize',14)
+xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
+box off
+text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
+title('merged odor sets')
+
+% plot learning curves (1st set)
+figure(fig_sets);
+cs_plus = []; cs_min = [];
+for nf = 1:5
+    cs_plus = [cs_plus,cs_plus_scores{nf}];
+    cs_min = [cs_min,cs_min_scores{nf}];
+end
+% plot
+cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
+cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
+% calculate 95% confidence interval
+p_plus = cs_plus_sum/100;  %for cs+ curve
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+p_min = cs_min_sum/100; %foc cs- curve
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+% plot
+subplot(3,3,1)
+plot(cs_plus_sum,'k')
+hold on
+errorbar(1:6,cs_plus_sum,ci_plus,'k')
+scatter(1:6,cs_plus_sum,70,'k','filled')
+plot(cs_min_sum,'k')
+errorbar(1:6,cs_min_sum,ci_min,'k')
+scatter(1:6,cs_min_sum,70,'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[1 1 1])
+xlim([0.5 6.5])
+ylim([0 100])
+xticks([1:6]); xticklabels({'T1','T2','T3','T4','T5','T6'})
+yticks([0:20:100]);
+set(gca,'Fontsize',14)
+xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
+box off
+text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
+title('1st odor set')
+
+% plot learning curves (2nd set)
+cs_plus = []; cs_min = [];
+for nf = 6:n_folders
+    cs_plus = [cs_plus,cs_plus_scores{nf}];
+    cs_min = [cs_min,cs_min_scores{nf}];
+end
+% plot
+cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
+cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
+% calculate 95% confidence interval
+p_plus = cs_plus_sum/100;  %for cs+ curve
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+p_min = cs_min_sum/100; %foc cs- curve
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+% plot
+subplot(3,3,4)
+plot(cs_plus_sum,'k')
+hold on
+errorbar(1:6,cs_plus_sum,ci_plus,'k')
+scatter(1:6,cs_plus_sum,70,'k','filled')
+plot(cs_min_sum,'k')
+errorbar(1:6,cs_min_sum,ci_min,'k')
+scatter(1:6,cs_min_sum,70,'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[1 1 1])
+xlim([0.5 6.5])
+ylim([0 100])
+xticks([1:6]); xticklabels({'T1','T2','T3','T4','T5','T6'})
+yticks([0:20:100]);
+set(gca,'Fontsize',14)
+xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
+box off
+text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
+title('2nd odor set')
+
+
+% chi square (in all cases ~0 from 3rd trial on after bonferroni 6x correction)
+
+cs_plus = []; cs_min = [];
+% set [nf = 1:5] for test on curves from odor set 1
+% set [nf = 6:10] for test on curves from odor set 2
+% set [nf = 1:n_folders] for test on curvers from merged odor datasets
+
+for nf = 1:n_folders 
+    cs_plus = [cs_plus,cs_plus_scores{nf}];
+    cs_min = [cs_min,cs_min_scores{nf}];
+end
+[n_trials ,n_individuals] = size(cs_plus); % Number of learning trials and Number of individuals in each dataset
+cs_plus(isnan(cs_plus))=0; cs_min(isnan(cs_min)) = 0;
+% Create a contingency table: contingency_table = [successes_group1 failures_group1; successes_group2 failures_group2];
+for t = 1:n_trials
+contingency_table = [sum(cs_plus(t,:)) n_individuals-sum(cs_plus(t,:)); sum(cs_min(t,:)) n_individuals-sum(cs_min(t,:))];
+[p_val(t),Q] = chi2test(contingency_table);
+end
+p_val_bonf = p_val*6; %Bonferroni correction
+subplot(3,3,7)
+for i = 1:6
+    if p_val_bonf(i)<0.005
+        text(i-.1,92,['*'],'FontSize',20)
+    end
+end
