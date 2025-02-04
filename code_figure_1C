@@ -1,0 +1,96 @@
+%% display memory test bar charts
+
+close all,clear all, clc
+cd /Users/marcopaoli/Dropbox/2024_Claire_MD/analysis
+load('database.mat')
+
+%% read database
+db = struc.db;
+readme = struc.readme;
+learning_curves = struc.learning_curves;
+cs_plus_test = learning_curves.annotated_test_plus;
+cs_min_test = learning_curves.annotate_test_minus;
+n_folders = length(db);
+
+%% plot all annotated results for the different memory tests
+% first row (odor set 1) ; second row (odor set 2) ; last row (merged odor sets)
+
+figure('color','white','position',[100 100 800 800])
+xtl = readme.labels_for_fig;
+cs_plus = []; cs_min = []; ind = 0;
+
+% plot all annotated results for merged datasets 1 and 2
+
+for nf = [2 1 4 5] % data orderd: AB/BA ; A/B ; AC/BC ; CAB/CBA
+    ind = ind+1;
+    cs_plus = [cs_plus_test{nf},cs_plus_test{nf+5}];
+    cs_min = [cs_min_test{nf},cs_min_test{nf+5}];
+    % plot
+    cs_plus_sum = sum(cs_plus,[],'omitnan')/length(cs_plus)*100;
+    cs_min_sum = sum(cs_min,[],'omitnan')/length(cs_min)*100;
+    % calculate 95% confidence interval
+    p_plus = cs_plus_sum/100;  %for cs+ curve
+    ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+    p_min = cs_min_sum/100; %foc cs- curve
+    ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+    % plot
+    subplot(3,4,ind+8)
+    errorbar(1:2,[cs_plus_sum cs_min_sum],[ci_plus ci_min],'.k')
+    hold on
+    b = bar([cs_plus_sum cs_min_sum],'FaceColor','flat');
+    b.CData(1,:) = [0 0 0]; b.CData(2,:) = [1 1 1];
+    box off
+    xlim([.5 2.5]); xticks([1 2]); xticklabels({xtl{nf,1},xtl{nf,2}})
+    ylim([0 100]); yticks([0:20:100])
+    % chi2 test
+    contingency_table = [sum(cs_plus) length(cs_plus)-sum(cs_plus); sum(cs_min) length(cs_min)-sum(cs_min)];
+    [p_val,Q] = chi2test(contingency_table);
+        set(gca,'Fontsize',12)
+
+    text(1,110,['{\itp}=',num2str(p_val)],'Fontsize',12)
+    if nf == 2
+        ylabel('PER [%]','FontSize',16);
+    end
+    store_n_plus(ind) = length(cs_plus); store_n_min(ind) = length(cs_min);
+    text(1.2,100,['{\itn}=',num2str(length(cs_plus))],'Fontsize',12)
+end
+
+% plot all annotated results for diff mem tests (odor set 1 and 2 separated)
+
+cs_plus = []; cs_min = [];ind = 0;
+for nf = [[2 1 4 5 ],[2 1 4 5 ]+5]%1:n_folders
+    ind = ind+1;
+    cs_plus = cs_plus_test{nf};
+    cs_min = cs_min_test{nf};
+    % plot
+    cs_plus_sum = sum(cs_plus,[],'omitnan')/length(cs_plus)*100;
+    cs_min_sum = sum(cs_min,[],'omitnan')/length(cs_min)*100;
+    % calculate 95% confidence interval
+    p_plus = cs_plus_sum/100;  %for cs+ curve
+    ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+    p_min = cs_min_sum/100; %foc cs- curve
+    ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+    % plot
+    subplot(3,4,ind)
+    errorbar(1:2,[cs_plus_sum cs_min_sum],[ci_plus ci_min],'.k')
+    hold on
+    b = bar([cs_plus_sum cs_min_sum],'FaceColor','flat');
+    b.CData(1,:) = [0 0 0]; b.CData(2,:) = [1 1 1];
+    box off
+    xlim([.5 2.5]); xticks([1 2]); xticklabels({xtl{nf,1},xtl{nf,2}})
+    ylim([0 110]); yticks([0:20:100])
+    set(gca,'Fontsize',12)
+    if nf == 2 
+        ylabel('PER [%]','FontSize',16);
+    end
+    if nf == 7
+        ylabel('PER [%]','FontSize',16);
+    end
+    % chi2 test
+    contingency_table = [sum(cs_plus) length(cs_plus)-sum(cs_plus); sum(cs_min) length(cs_min)-sum(cs_min)];
+    [p_val,Q] = chi2test(contingency_table);
+    text(1,110,['{\itp}=',num2str(p_val)])
+    text(1.2,100,['{\itn}=',num2str(length(cs_plus))],'Fontsize',12)
+end
+
+sgtitle 'odor set 1 (top row) and 2 (middle row), merge odor sets (third row)'
