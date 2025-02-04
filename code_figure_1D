@@ -1,0 +1,215 @@
+%% code figure 1D
+
+close all,clear all, clc
+cd /Users/marcopaoli/Dropbox/2024_Claire_MD/analysis
+load('database.mat')
+
+%% read database
+db = struc.db;
+readme = struc.readme;
+clear struc
+
+%% set some variables
+pastel = brewermap([],'Pastel2');
+reds = brewermap(20,'Reds');
+blues = brewermap(20,'Blues');
+greens = brewermap(20,'Greens');
+oranges = brewermap(20,'Oranges');
+close all
+
+%% display traces
+close all
+n_folders = length(db);
+pairs = readme.pairs;
+labels_for_fig = readme.labels_for_fig;
+nf_ind = 0;
+readme.line27 = 'adjusted p3 likelyhood trace';
+b_anal_resp = cell(1,6); b_anal_lab = cell(1,6);
+
+% adjust trace from -20s to +30s ((total of 50s*50hz = 2501pt)
+% 0 will be placed at 10s = 501 pt
+xx = [1:2501]*(1/50)-20;
+fig_traces = figure('color','white','position',[100 100 1400 600]);
+count_excl_bees = 0; count_bees = 0;
+for nf = [2 1 4 5]%1:5%n_folders
+    folder1 = db{nf};
+    folder2 = db{nf+5};
+    folder = [folder1;folder2];
+    n_vid = size(folder,1);
+    folder_pair = pairs(nf,:);
+    cs_plus = pairs{nf,1}; cs_min = pairs{nf,2};
+    raster_plus = []; raster_min = [];
+    ind_p = 0; ind_m = 0;
+    for nv = 1:n_vid
+        %check onset fram
+        onset = folder{nv,9};
+        if ~isnan(onset)
+            %the use the onset frame to adjust proboscis trace
+            
+            vec = folder{nv,27};
+            vec = vec(1:2501);
+            vec_bin = vec;
+            % binarize vector of p3
+            vec_bin(vec_bin>.8)=1; vec_bin(vec_bin<0.9)=0;
+            vec = vec_bin; vec(isnan(vec))=0;
+            % remove bees extending proboscis before 0 (pt 1000)
+            count_bees = count_bees+1;
+            if sum(vec(900:1000))<50 %if less than 1s PER in the 2s win before stim onset
+                if nf == 2
+                    if strcmp(folder{nv,4},'CS')
+                        ind_p = ind_p+1;
+                        raster_plus(ind_p,:) = vec;
+                    elseif strcmp(folder{nv,4},'NO')
+                        ind_m = ind_m+1;
+                        raster_min(ind_m,:) = vec;
+                    elseif ((strcmp(folder{nv,4},'AB') && strcmp(folder{nv,28},'AB'))...
+                            || (strcmp(folder{nv,4},'BA') && strcmp(folder{nv,28},'BA')))
+                        ind_p = ind_p+1;
+                        raster_plus(ind_p,:) = vec;
+                    elseif ((strcmp(folder{nv,4},'BA') && strcmp(folder{nv,28},'AB'))...
+                            || (strcmp(folder{nv,4},'AB') && strcmp(folder{nv,28},'BA')))
+                        ind_m = ind_m+1;
+                        raster_min(ind_m,:) = vec;
+                    end
+                else
+                    if ((strcmp(folder{nv,4},cs_plus) && strcmp(folder{nv,28},'AB'))...
+                            || (strcmp(folder{nv,4},cs_min) && strcmp(folder{nv,28},'BA')))
+                        ind_p = ind_p+1;
+                        raster_plus(ind_p,:) = vec;
+                    elseif ((strcmp(folder{nv,4},cs_min) && strcmp(folder{nv,28},'AB'))...
+                            || (strcmp(folder{nv,4},cs_plus) && strcmp(folder{nv,28},'BA')))
+                        ind_m = ind_m+1;
+                        raster_min(ind_m,:) = vec;
+                    end
+                end
+            else
+                count_excl_bees = count_excl_bees+1;
+            end
+        else
+        end
+    end
+    
+
+    % plot traces
+    figure(fig_traces)
+    nf_ind = nf_ind+1;
+    subplot(2,4,nf_ind) %horizontal
+    %subplot(4,2,nf_ind*2-1) %vertical
+    %subplot(1,n_folders,nf*2-1)
+    hold on
+    color_a = greens(2,:,:);
+    color_b = reds(2,:,:);
+    color_c = blues(2,:,:);
+    lstl = ':';
+    
+    if isequal(labels_for_fig{nf,1},'A')
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'B')
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'AB')
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_b,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'BA')
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_a,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'AC')
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_c,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'BC')
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_c,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'CAB')
+        patch([-5 0 0 -5],[0 0 110 110],color_c,'LineStyle',lstl)
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_b,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'CBA')
+        patch([-5 0 0 -5],[0 0 110 110],color_c,'LineStyle',lstl)
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_a,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'ABC')
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([10 15 15 10],[0 0 110 110],color_c,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,1},'BAC')
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([10 15 15 10],[0 0 110 110],color_c,'LineStyle',lstl)
+    end
+    
+    plot(xx,sum(raster_plus,'omitnan')/size(raster_plus,1)*100,'k')
+    xlim([-10 15]); ylim([0 100]);
+    xlabel('time [s]')
+    yticks([0 50 100])
+    text(-7,60,['{\itn}=',num2str(size(raster_plus,1))],'FontSize',18)
+    set(gca, 'FontSize',16)
+    
+    % STATS between response to the different odors of the same sequence
+    if ismember(nf,[2 4 5])
+        plus_avg_odor1 = mean(raster_plus(:,1100:1150),2,'omitnan');
+        plus_avg_odor2 = mean(raster_plus(:,1350:1400),2,'omitnan');
+        %compare non-independent sets with non-param Wilcoxon
+        p = signrank(plus_avg_odor1,plus_avg_odor2);
+        text(0,80,['{\itp}=',num2str(p)],'FontSize',16)
+    end
+    
+    subplot(2,4,nf_ind+4) %horizontal
+
+    %add patches to define stimuli
+    patch([0 5 5 0],[0 0 110 110],pastel(1,:,:),'LineStyle',lstl)
+    hold on
+    if isequal(labels_for_fig{nf,2},'A')
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,2},'B')
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,2},'AB')
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_b,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,2},'BA')
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',':')
+        patch([5 10 10 5],[0 0 110 110],color_a,'LineStyle',':')
+    elseif isequal(labels_for_fig{nf,2},'AC')
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_c,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,2},'BC')
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_c,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,2},'CAB')
+        patch([-5 0 0 -5],[0 0 110 110],color_c,'LineStyle',lstl)
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_b,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,2},'CBA')
+        patch([-5 0 0 -5],[0 0 110 110],color_c,'LineStyle',lstl)
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_a,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,2},'ABC')
+        patch([0 5 5 0],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([10 15 15 10],[0 0 110 110],color_c,'LineStyle',lstl)
+    elseif isequal(labels_for_fig{nf,2},'BAC')
+        patch([0 5 5 0],[0 0 110 110],color_b,'LineStyle',lstl)
+        patch([5 10 10 5],[0 0 110 110],color_a,'LineStyle',lstl)
+        patch([10 15 15 10],[0 0 110 110],color_c,'LineStyle',lstl)
+    end
+
+    % plot PER probability traces
+    plot(xx,sum(raster_min,'omitnan')/size(raster_min,1)*100,'k')
+    xlim([-10 15]); ylim([0 100]);
+    xlabel('time [s]')
+    yticks([0 50 100])
+    text(-7,60,['{\itn}=',num2str(size(raster_min,1))],'FontSize',18)
+    set(gca, 'FontSize',16)
+    
+    
+    % STATS between response to the different stimuli
+    
+    if ismember(nf,[2 4 5])
+        min_avg_odor1 = mean(raster_min(:,1100:1150),2,'omitnan'); %from 2 to 3 s
+        min_avg_odor2 = mean(raster_min(:,1350:1400),2,'omitnan'); %from
+        %compare non-independent sets with non-param Wilcoxon
+        p = signrank(min_avg_odor1,min_avg_odor2);
+        text(0,80,['{\itp}=',num2str(p)],'FontSize',16)
+    end
+end
+
+disp 'done'
+
