@@ -1,8 +1,8 @@
 %% display memory test bar charts
 
 close all,clear all, clc
-cd /Users/marcopaoli/Dropbox/2024_Claire_MD/analysis
-load('database.mat')
+load('stat_learn_database_reduced.mat')
+
 
 %% read database
 db = struc.db;
