@@ -8,89 +8,155 @@ load('stat_learn_database_reduced.mat')
 db = struc.db;
 readme = struc.readme;
 learning_curves = struc.learning_curves;
-cs_plus_test = learning_curves.annotated_test_plus;
-cs_min_test = learning_curves.annotate_test_minus;
+cs_plus_scores = learning_curves.learning_curve_plus;
+cs_min_scores = learning_curves.learning_cuver_minus;
 n_folders = length(db);
 
-%% plot all annotated results for the different memory tests
-% first row (odor set 1) ; second row (odor set 2) ; last row (merged odor sets)
+%% plot learning curves (merged odor sets)
+fig_sets = figure('color','white','position',[100 100 1000 1000]);
 
-figure('color','white','position',[100 100 800 800])
-xtl = readme.labels_for_fig;
-cs_plus = []; cs_min = []; ind = 0;
-
-% plot all annotated results for merged datasets 1 and 2
-
-for nf = [2 1 4 5] % data orderd: AB/BA ; A/B ; AC/BC ; CAB/CBA
-    ind = ind+1;
-    cs_plus = [cs_plus_test{nf},cs_plus_test{nf+5}];
-    cs_min = [cs_min_test{nf},cs_min_test{nf+5}];
-    % plot
-    cs_plus_sum = sum(cs_plus,[],'omitnan')/length(cs_plus)*100;
-    cs_min_sum = sum(cs_min,[],'omitnan')/length(cs_min)*100;
-    % calculate 95% confidence interval
-    p_plus = cs_plus_sum/100;  %for cs+ curve
-    ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
-    p_min = cs_min_sum/100; %foc cs- curve
-    ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
-    % plot
-    subplot(3,4,ind+8)
-    errorbar(1:2,[cs_plus_sum cs_min_sum],[ci_plus ci_min],'.k')
-    hold on
-    b = bar([cs_plus_sum cs_min_sum],'FaceColor','flat');
-    b.CData(1,:) = [0 0 0]; b.CData(2,:) = [1 1 1];
-    box off
-    xlim([.5 2.5]); xticks([1 2]); xticklabels({xtl{nf,1},xtl{nf,2}})
-    ylim([0 100]); yticks([0:20:100])
-    % chi2 test
-    contingency_table = [sum(cs_plus) length(cs_plus)-sum(cs_plus); sum(cs_min) length(cs_min)-sum(cs_min)];
-    [p_val,Q] = chi2test(contingency_table);
-        set(gca,'Fontsize',12)
-
-    text(1,110,['{\itp}=',num2str(p_val)],'Fontsize',12)
-    if nf == 2
-        ylabel('PER [%]','FontSize',16);
-    end
-    store_n_plus(ind) = length(cs_plus); store_n_min(ind) = length(cs_min);
-    text(1.2,100,['{\itn}=',num2str(length(cs_plus))],'Fontsize',12)
+cs_plus = []; cs_min = [];
+for nf = 1:n_folders
+    cs_plus = [cs_plus,cs_plus_scores{nf}];
+    cs_min = [cs_min,cs_min_scores{nf}];
 end
+% plot
+cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
+cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
+% calculate 95% confidence interval
+p_plus = cs_plus_sum/100;  %for cs+ curve
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+p_min = cs_min_sum/100; %foc cs- curve
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
 
-% plot all annotated results for diff mem tests (odor set 1 and 2 separated)
+%plot learning curve merged datasets 1 and 2
+figure(fig_sets);
+subplot(3,3,7)
+plot(cs_plus_sum,'k')
+hold on
+errorbar(1:6,cs_plus_sum,ci_plus,'k')
+scatter(1:6,cs_plus_sum,70,'k','filled')
+plot(cs_min_sum,'k')
+errorbar(1:6,cs_min_sum,ci_min,'k')
+s = scatter(1:6,cs_min_sum,70,'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[1 1 1]);
+xlim([0.5 6.5])
+ylim([0 100])
+xticks([1:6]); xticklabels({'T1','T2','T3','T4','T5','T6'})
+yticks([0:20:100]);
+set(gca,'Fontsize',14)
+xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
+box off
+text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
+title('merged odor sets')
+%% apply GMLL
 
-cs_plus = []; cs_min = [];ind = 0;
-for nf = [[2 1 4 5 ],[2 1 4 5 ]+5]%1:n_folders
-    ind = ind+1;
-    cs_plus = cs_plus_test{nf};
-    cs_min = cs_min_test{nf};
-    % plot
-    cs_plus_sum = sum(cs_plus,[],'omitnan')/length(cs_plus)*100;
-    cs_min_sum = sum(cs_min,[],'omitnan')/length(cs_min)*100;
-    % calculate 95% confidence interval
-    p_plus = cs_plus_sum/100;  %for cs+ curve
-    ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
-    p_min = cs_min_sum/100; %foc cs- curve
-    ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
-    % plot
-    subplot(3,4,ind)
-    errorbar(1:2,[cs_plus_sum cs_min_sum],[ci_plus ci_min],'.k')
-    hold on
-    b = bar([cs_plus_sum cs_min_sum],'FaceColor','flat');
-    b.CData(1,:) = [0 0 0]; b.CData(2,:) = [1 1 1];
-    box off
-    xlim([.5 2.5]); xticks([1 2]); xticklabels({xtl{nf,1},xtl{nf,2}})
-    ylim([0 110]); yticks([0:20:100])
-    set(gca,'Fontsize',12)
-    if nf == 2 
-        ylabel('PER [%]','FontSize',16);
-    end
-    if nf == 7
-        ylabel('PER [%]','FontSize',16);
-    end
-    % chi2 test
-    contingency_table = [sum(cs_plus) length(cs_plus)-sum(cs_plus); sum(cs_min) length(cs_min)-sum(cs_min)];
-    [p_val,Q] = chi2test(contingency_table);
-    text(1,110,['{\itp}=',num2str(p_val)])
-    text(1.2,100,['{\itn}=',num2str(length(cs_plus))],'Fontsize',12)
+%reshape data
+n_trials = 6;
+n_individuals = 425;
+
+% Convert cs_plus into long format
+[trial_p, id_p] = ndgrid(1:n_trials, 1:n_individuals);
+cs_plus_long = table(id_p(:), trial_p(:), cs_plus(:), repmat("CS+", numel(cs_plus), 1), ...
+                     'VariableNames', {'Individual', 'Trial', 'Response', 'Stimulus'});
+
+% Convert cs_min into long format
+[trial_m, id_m] = ndgrid(1:n_trials, 1:n_individuals);
+cs_min_long = table(id_m(:), trial_m(:), cs_min(:), repmat("CS-", numel(cs_min), 1), ...
+                    'VariableNames', {'Individual', 'Trial', 'Response', 'Stimulus'});
+
+% Combine both datasets
+data_long = [cs_plus_long; cs_min_long];
+
+% Convert categorical variables
+data_long.Stimulus = categorical(data_long.Stimulus);
+data_long.Trial = categorical(data_long.Trial);
+data_long.Individual = categorical(data_long.Individual);
+
+% Define the GLMM model
+glmm_model = fitglme(data_long, ...
+    'Response ~ Stimulus * Trial + (1 | Individual)', ...
+    'Distribution', 'Binomial', ...
+    'Link', 'logit');
+disp(glmm_model)
+
+% Define the GLMM model to have simpler table (trial/stim/interaction)
+data_long.Trial = double(data_long.Trial);
+
+
+glmm_model_simple = fitglme(data_long, ...
+    'Response ~ Trial * Stimulus + (1 | Individual)', ...
+    'Distribution', 'binomial', 'Link', 'logit');
+disp(glmm_model_simple)
+
+% To apply Bonferroni correction adjust p-values for the number of test
+num_tests = length(glmm_model.Coefficients);  % Number of tests (fixed effects)
+
+%% plot learning curves (1st set)
+figure(fig_sets);
+cs_plus = []; cs_min = [];
+for nf = 1:5
+    cs_plus = [cs_plus,cs_plus_scores{nf}];
+    cs_min = [cs_min,cs_min_scores{nf}];
 end
+% plot
+cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
+cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
+% calculate 95% confidence interval
+p_plus = cs_plus_sum/100;  %for cs+ curve
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+p_min = cs_min_sum/100; %foc cs- curve
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+% plot
+subplot(3,3,1)
+plot(cs_plus_sum,'k')
+hold on
+errorbar(1:6,cs_plus_sum,ci_plus,'k')
+scatter(1:6,cs_plus_sum,70,'k','filled')
+plot(cs_min_sum,'k')
+errorbar(1:6,cs_min_sum,ci_min,'k')
+scatter(1:6,cs_min_sum,70,'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[1 1 1])
+xlim([0.5 6.5])
+ylim([0 100])
+xticks([1:6]); xticklabels({'T1','T2','T3','T4','T5','T6'})
+yticks([0:20:100]);
+set(gca,'Fontsize',14)
+xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
+box off
+text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
+title('1st odor set')
 
-sgtitle 'odor set 1 (top row) and 2 (middle row), merge odor sets (third row)'
+% plot learning curves (2nd set)
+cs_plus = []; cs_min = [];
+for nf = 6:n_folders
+    cs_plus = [cs_plus,cs_plus_scores{nf}];
+    cs_min = [cs_min,cs_min_scores{nf}];
+end
+% plot
+cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
+cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
+% calculate 95% confidence interval
+p_plus = cs_plus_sum/100;  %for cs+ curve
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+p_min = cs_min_sum/100; %foc cs- curve
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+% plot
+subplot(3,3,4)
+plot(cs_plus_sum,'k')
+hold on
+errorbar(1:6,cs_plus_sum,ci_plus,'k')
+scatter(1:6,cs_plus_sum,70,'k','filled')
+plot(cs_min_sum,'k')
+errorbar(1:6,cs_min_sum,ci_min,'k')
+scatter(1:6,cs_min_sum,70,'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[1 1 1])
+xlim([0.5 6.5])
+ylim([0 100])
+xticks([1:6]); xticklabels({'T1','T2','T3','T4','T5','T6'})
+yticks([0:20:100]);
+set(gca,'Fontsize',14)
+xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
+box off
+text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
+title('2nd odor set')
+
+
+
