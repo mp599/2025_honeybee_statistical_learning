@@ -12,7 +12,7 @@ cs_min_scores = learning_curves.learning_cuver_minus;
 n_folders = length(db);
 
 %% plot learning curves (merged odor sets)
-fig_sets = figure('color','white','position',[100 100 800 800]);
+fig_sets = figure('color','white','position',[100 100 1000 1000]);
 
 cs_plus = []; cs_min = [];
 for nf = 1:n_folders
@@ -47,8 +47,50 @@ xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
 box off
 text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
 title('merged odor sets')
+%% apply GMLL
 
-% plot learning curves (1st set)
+%reshape data
+n_trials = 6;
+n_individuals = 425;
+
+% Convert cs_plus into long format
+[trial_p, id_p] = ndgrid(1:n_trials, 1:n_individuals);
+cs_plus_long = table(id_p(:), trial_p(:), cs_plus(:), repmat("CS+", numel(cs_plus), 1), ...
+                     'VariableNames', {'Individual', 'Trial', 'Response', 'Stimulus'});
+
+% Convert cs_min into long format
+[trial_m, id_m] = ndgrid(1:n_trials, 1:n_individuals);
+cs_min_long = table(id_m(:), trial_m(:), cs_min(:), repmat("CS-", numel(cs_min), 1), ...
+                    'VariableNames', {'Individual', 'Trial', 'Response', 'Stimulus'});
+
+% Combine both datasets
+data_long = [cs_plus_long; cs_min_long];
+
+% Convert categorical variables
+data_long.Stimulus = categorical(data_long.Stimulus);
+data_long.Trial = categorical(data_long.Trial);
+data_long.Individual = categorical(data_long.Individual);
+
+% Define the GLMM model
+glmm_model = fitglme(data_long, ...
+    'Response ~ Stimulus * Trial + (1 | Individual)', ...
+    'Distribution', 'Binomial', ...
+    'Link', 'logit');
+disp(glmm_model)
+
+% Define the GLMM model to have simpler table (trial/stim/interaction)
+data_long.Trial = double(data_long.Trial);
+
+
+glmm_model_simple = fitglme(data_long, ...
+    'Response ~ Trial * Stimulus + (1 | Individual)', ...
+    'Distribution', 'binomial', 'Link', 'logit');
+disp(glmm_model_simple)
+
+% To apply Bonferroni correction adjust p-values for the number of test
+num_tests = length(glmm_model.Coefficients);  % Number of tests (fixed effects)
+
+%% plot learning curves (1st set)
 figure(fig_sets);
 cs_plus = []; cs_min = [];
 for nf = 1:5
@@ -116,28 +158,5 @@ text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
 title('2nd odor set')
 
 
-% chi square (in all cases ~0 from 3rd trial on after bonferroni 6x correction)
 
-cs_plus = []; cs_min = [];
-% set [nf = 1:5] for test on curves from odor set 1
-% set [nf = 6:10] for test on curves from odor set 2
-% set [nf = 1:n_folders] for test on curvers from merged odor datasets
 
-for nf = 1:n_folders 
-    cs_plus = [cs_plus,cs_plus_scores{nf}];
-    cs_min = [cs_min,cs_min_scores{nf}];
-end
-[n_trials ,n_individuals] = size(cs_plus); % Number of learning trials and Number of individuals in each dataset
-cs_plus(isnan(cs_plus))=0; cs_min(isnan(cs_min)) = 0;
-% Create a contingency table: contingency_table = [successes_group1 failures_group1; successes_group2 failures_group2];
-for t = 1:n_trials
-contingency_table = [sum(cs_plus(t,:)) n_individuals-sum(cs_plus(t,:)); sum(cs_min(t,:)) n_individuals-sum(cs_min(t,:))];
-[p_val(t),Q] = chi2test(contingency_table);
-end
-p_val_bonf = p_val*6; %Bonferroni correction
-subplot(3,3,7)
-for i = 1:6
-    if p_val_bonf(i)<0.005
-        text(i-.1,92,['*'],'FontSize',20)
-    end
-end
