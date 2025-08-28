@@ -1,7 +1,9 @@
 %% code figure 1D
 
 close all,clear all, clc
+cd /Users/marcopaoli/Dropbox/2024_Claire_MD/manuscript/repository/
 load('stat_learn_database_reduced.mat')
+
 
 %% read database
 db = struc.db;
@@ -24,7 +26,7 @@ labels_for_fig = readme.labels_for_fig;
 nf_ind = 0;
 readme.line27 = 'adjusted p3 likelyhood trace';
 b_anal_resp = cell(1,6); b_anal_lab = cell(1,6);
-pvals = [];
+pvals = []; zvals = [];
 % adjust trace from -20s to +30s ((total of 50s*50hz = 2501pt)
 % 0 will be placed at 10s = 501 pt
 xx = [1:2501]*(1/50)-20;
@@ -147,9 +149,12 @@ for nf = [2 1 4 5]%1:5%n_folders
         plus_avg_odor1 = mean(raster_plus(:,1100:1150),2,'omitnan');
         plus_avg_odor2 = mean(raster_plus(:,1350:1400),2,'omitnan');
         %compare non-independent sets with non-param Wilcoxon
-        p = signrank(plus_avg_odor1,plus_avg_odor2);
+        [p,~,stats] = signrank(plus_avg_odor1,plus_avg_odor2);
         text(0,80,['{\itp}=',num2str(p)],'FontSize',16)
         pvals = [pvals,p];
+        z = stats.zval/sqrt(length(plus_avg_odor1));
+        zvals = [zvals,z];
+        text(0,70,['{\itz}=',num2str(z)],'FontSize',16)
     end
     
     subplot(2,4,nf_ind+4) %horizontal
@@ -206,9 +211,13 @@ for nf = [2 1 4 5]%1:5%n_folders
         min_avg_odor1 = mean(raster_min(:,1100:1150),2,'omitnan'); %from 2 to 3 s
         min_avg_odor2 = mean(raster_min(:,1350:1400),2,'omitnan'); %from
         %compare non-independent sets with non-param Wilcoxon
-        p = signrank(min_avg_odor1,min_avg_odor2);
+        %p = signrank(min_avg_odor1,min_avg_odor2);
+        [p,~,stats] = signrank(min_avg_odor1,min_avg_odor2);
+        z = stats.zval/sqrt(length(plus_avg_odor1));
         pvals = [pvals,p];
+        zvals = [zvals,z];
         text(0,80,['{\itp}=',num2str(p)],'FontSize',16)
+        text(0,70,['{\itz}=',num2str(z)],'FontSize',16)
     end
 end
 
