@@ -1,7 +1,8 @@
-%% plot learning curves
+%% visualize learning curve 
 
 close all,clear all, clc
-load('stat_learn_database_reduced.mat')
+cd /Users/marcopaoli/Dropbox/2024_Claire_MD/analysis
+load('database.mat')
 
 %% read database
 db = struc.db;
@@ -10,9 +11,13 @@ learning_curves = struc.learning_curves;
 cs_plus_scores = learning_curves.learning_curve_plus;
 cs_min_scores = learning_curves.learning_cuver_minus;
 n_folders = length(db);
+%% set some variables
+
 
 %% plot learning curves (merged odor sets)
-fig_sets = figure('color','white','position',[100 100 1000 1000]);
+close all
+fig_merged = figure('color','white','position',[100 100 400 300])
+fig_sets = figure('color','white','position',[100 100 800 800])
 
 cs_plus = []; cs_min = [];
 for nf = 1:n_folders
@@ -24,12 +29,12 @@ cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
 cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
 % calculate 95% confidence interval
 p_plus = cs_plus_sum/100;  %for cs+ curve
-ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100
 p_min = cs_min_sum/100; %foc cs- curve
-ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
-
-%plot learning curve merged datasets 1 and 2
-figure(fig_sets);
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100
+% plot
+%figure(fig_merged)
+figure(fig_sets)
 subplot(3,3,7)
 plot(cs_plus_sum,'k')
 hold on
@@ -37,7 +42,7 @@ errorbar(1:6,cs_plus_sum,ci_plus,'k')
 scatter(1:6,cs_plus_sum,70,'k','filled')
 plot(cs_min_sum,'k')
 errorbar(1:6,cs_min_sum,ci_min,'k')
-s = scatter(1:6,cs_min_sum,70,'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[1 1 1]);
+s = scatter(1:6,cs_min_sum,70,'MarkerEdgeColor',[0 0 0],'MarkerFaceColor',[1 1 1])
 xlim([0.5 6.5])
 ylim([0 100])
 xticks([1:6]); xticklabels({'T1','T2','T3','T4','T5','T6'})
@@ -47,51 +52,9 @@ xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
 box off
 text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
 title('merged odor sets')
-%% apply GMLL
 
-%reshape data
-n_trials = 6;
-n_individuals = 425;
-
-% Convert cs_plus into long format
-[trial_p, id_p] = ndgrid(1:n_trials, 1:n_individuals);
-cs_plus_long = table(id_p(:), trial_p(:), cs_plus(:), repmat("CS+", numel(cs_plus), 1), ...
-                     'VariableNames', {'Individual', 'Trial', 'Response', 'Stimulus'});
-
-% Convert cs_min into long format
-[trial_m, id_m] = ndgrid(1:n_trials, 1:n_individuals);
-cs_min_long = table(id_m(:), trial_m(:), cs_min(:), repmat("CS-", numel(cs_min), 1), ...
-                    'VariableNames', {'Individual', 'Trial', 'Response', 'Stimulus'});
-
-% Combine both datasets
-data_long = [cs_plus_long; cs_min_long];
-
-% Convert categorical variables
-data_long.Stimulus = categorical(data_long.Stimulus);
-data_long.Trial = categorical(data_long.Trial);
-data_long.Individual = categorical(data_long.Individual);
-
-% Define the GLMM model
-glmm_model = fitglme(data_long, ...
-    'Response ~ Stimulus * Trial + (1 | Individual)', ...
-    'Distribution', 'Binomial', ...
-    'Link', 'logit');
-disp(glmm_model)
-
-% Define the GLMM model to have simpler table (trial/stim/interaction)
-data_long.Trial = double(data_long.Trial);
-
-
-glmm_model_simple = fitglme(data_long, ...
-    'Response ~ Trial * Stimulus + (1 | Individual)', ...
-    'Distribution', 'binomial', 'Link', 'logit');
-disp(glmm_model_simple)
-
-% To apply Bonferroni correction adjust p-values for the number of test
-num_tests = length(glmm_model.Coefficients);  % Number of tests (fixed effects)
-
-%% plot learning curves (1st set)
-figure(fig_sets);
+% plot learning curves (1st set)
+figure(fig_sets)
 cs_plus = []; cs_min = [];
 for nf = 1:5
     cs_plus = [cs_plus,cs_plus_scores{nf}];
@@ -102,9 +65,9 @@ cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
 cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
 % calculate 95% confidence interval
 p_plus = cs_plus_sum/100;  %for cs+ curve
-ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100
 p_min = cs_min_sum/100; %foc cs- curve
-ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100
 % plot
 subplot(3,3,1)
 plot(cs_plus_sum,'k')
@@ -135,9 +98,9 @@ cs_plus_sum = sum(cs_plus,2,'omitnan')/size(cs_plus,2)*100;
 cs_min_sum = sum(cs_min,2,'omitnan')/size(cs_min,2)*100;
 % calculate 95% confidence interval
 p_plus = cs_plus_sum/100;  %for cs+ curve
-ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100;
+ci_plus = 1.96*sqrt(p_plus.*(1-p_plus)/size(cs_plus,2))*100
 p_min = cs_min_sum/100; %foc cs- curve
-ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100;
+ci_min = 1.96*sqrt(p_min.*(1-p_min)/size(cs_min,2))*100
 % plot
 subplot(3,3,4)
 plot(cs_plus_sum,'k')
@@ -156,6 +119,71 @@ xlabel('learning trial','FontSize',16); ylabel('PER [%]','FontSize',16);
 box off
 text(4,20,['{\itn} = ',num2str(size(cs_min,2))],'fontsize',16)
 title('2nd odor set')
+
+%% try and use GLM to compare cs+ and cs- curves 
+
+% all odor set pulled
+cs_plus = []; cs_min = [];
+for nf = 1:n_folders
+    cs_plus = [cs_plus,cs_plus_scores{nf}];
+    cs_min = [cs_min,cs_min_scores{nf}];
+end
+% Generate example data for two datasets
+[n_trials ,n_individuals] = size(cs_plus)% Number of learning trials and Number of individuals in each dataset
+
+
+% Generate binary outcomes for learning (1) or not (0) for each trial
+learning_data_1 = cs_plus;
+learning_data_2 = cs_min;
+% change nan to 0
+learning_data_1(isnan(learning_data_1)) = 0;
+learning_data_2(isnan(learning_data_2)) = 0;
+% Reshape the data for fitting logistic regression models
+response_1 = learning_data_1(:); % Reshape matrix to column vector
+response_2 = learning_data_2(:); % Reshape matrix to column vector
+% Create trial number predictor variable
+trial_numbers = repmat((1:n_trials)', n_individuals, 1);
+% Fit logistic regression models to each dataset
+glm_1 = fitglm(trial_numbers, response_1, 'Distribution', 'binomial', 'Link', 'logit');
+glm_2 = fitglm(trial_numbers, response_2, 'Distribution', 'binomial', 'Link', 'logit');
+
+% Display coefficient estimates for trial number in each dataset
+disp('Coefficient estimates for trial number in dataset 1:');
+disp(glm_1.Coefficients);
+disp('Coefficient estimates for trial number in dataset 2:');
+disp(glm_2.Coefficients);
+
+% Compare model fit (e.g., using deviance)
+deviance_1 = glm_1.Deviance;
+deviance_2 = glm_2.Deviance;
+
+% Compare deviance between models
+disp(['Deviance for dataset 1: ', num2str(deviance_1)]);
+disp(['Deviance for dataset 2: ', num2str(deviance_2)]);
+
+%% proper mixed model to have all combinations
+
+% Label stimulus type
+stim_cs_plus = repmat({'CSplus'}, n_trials * n_individuals, 1);
+stim_cs_min  = repmat({'CSminus'}, n_trials * n_individuals, 1);
+
+% Subject IDs
+subject_ids = repmat((1:n_individuals)', n_trials, 1);
+subject_ids = [subject_ids; subject_ids]; % for both CS+ and CS-
+
+% Combine trial numbers and responses
+trial_all = [repmat((1:n_trials)', n_individuals, 1); repmat((1:n_trials)', n_individuals, 1)];
+response_all = [response_1; response_2];
+stim_all = [stim_cs_plus; stim_cs_min];
+
+% Build data table
+tbl = table(response_all, trial_all, stim_all, subject_ids, ...
+    'VariableNames', {'Response', 'Trial', 'Stimulus', 'Subject'});
+tbl.Trial = categorical(tbl.Trial);  % Convert Trial to a categorical variable
+
+glme = fitglme(tbl, 'Response ~ Trial*Stimulus + (1|Subject)', ...
+    'Distribution', 'Binomial', 'Link', 'logit');
+disp(glme.Coefficients)
 
 
 
